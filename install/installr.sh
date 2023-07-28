@@ -18,22 +18,27 @@ IFS=$'\n'
 # so we get to use Bash pattern matching
 BASENAME=${0##*/}
 THISDIR=${0%$BASENAME}
-PACKAGESDIR="${THISDIR}packages"
+# PACKAGESDIR="${THISDIR}packages"
 INSTALLMACOSAPP=$(echo "${THISDIR}Install macOS"*.app)
 STARTOSINSTALL=$(echo "${THISDIR}Install macOS"*.app/Contents/Resources/startosinstall)
 
 if [ ! -e "$STARTOSINSTALL" ]; then
     echo "Can't find an Install macOS app containing startosinstall in this script's directory!"
-    exit -1
+    read -e -p "Please give the absolute path to the macOS install app (Install*.app): " INSTALLMACOSAPP
+    INSTALLMACOSAPP=${INSTALLMACOSAPP//\/\//\/}
+    STARTOSINSTALL=$(echo "${INSTALLMACOSAPP}"/Contents/Resources/startosinstall)
+    STARTOSINSTALL=${STARTOSINSTALL//\/\//\/}
+    STARTOSINSTALL=${STARTOSINSTALL//.app /.app}
+    # exit -1
 fi
 
 echo "****** Welcome to installr! ******"
 echo "macOS will be installed from:"
 echo "    ${INSTALLMACOSAPP}"
-echo "these additional packages will also be installed:"
-for PKG in $(/bin/ls -1 "${PACKAGESDIR}"/*.pkg); do
-    echo "    ${PKG}"
-done
+# echo "these additional packages will also be installed:"
+# for PKG in $(/bin/ls -1 "${PACKAGESDIR}"/*.pkg); do
+#     echo "    ${PKG}"
+# done
 echo
 echo "Available volumes:"
 for VOL in $(/bin/ls -1 /Volumes) ; do
@@ -63,17 +68,24 @@ echo "Installing macOS to /Volumes/${SELECTEDVOLUME}..."
 
 # build our startosinstall command
 CMD="\"${STARTOSINSTALL}\" --agreetolicense --volume \"/Volumes/${SELECTEDVOLUME}\"" 
+#
+# Test things Before
+# echo $STARTOSINSTALL
+# echo "\"${STARTOSINSTALL}\""
+# echo " --agreetolicense --volume \"/Volumes/${SELECTEDVOLUME}\"" 
+# CMD="\"${STARTOSINSTALL}\" --usage"
 
-for ITEM in "${PACKAGESDIR}"/* ; do
-    FILENAME="${ITEM##*/}"
-    EXTENSION="${FILENAME##*.}"
-    if [[ -e ${ITEM} ]]; then
-        case ${EXTENSION} in
-            pkg ) CMD="${CMD} --installpackage \"${ITEM}\"" ;;
-            * ) echo "    ignoring non-package ${ITEM}..." ;;
-        esac
-    fi
-done
+#Ignoring and commenting Pkg installs
+# for ITEM in "${PACKAGESDIR}"/* ; do
+#     FILENAME="${ITEM##*/}"
+#     EXTENSION="${FILENAME##*.}"
+#     if [[ -e ${ITEM} ]]; then
+#         case ${EXTENSION} in
+#             pkg ) CMD="${CMD} --installpackage \"${ITEM}\"" ;;
+#             * ) echo "    ignoring non-package ${ITEM}..." ;;
+#         esac
+#     fi
+# done
 
 # kick off the OS install
 eval $CMD
